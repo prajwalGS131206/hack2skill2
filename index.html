@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartFlow AI — Urban Mobility Intelligence</title>
+  <meta name="description" content="Real-time AI-powered traffic congestion analysis and route optimization for smart cities." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Leaflet Real Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+  <div class="bg-glow glow-3"></div>
+
+  <!-- Decision Detail Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="decisionModal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-title" id="modalTitle">Decision Breakdown</div>
+      <div class="modal-sub" id="modalSub"></div>
+      <div class="modal-chips" id="modalChips"></div>
+      <div class="modal-section">
+        <div class="modal-section-title">🧮 AI Scoring Matrix</div>
+        <div class="score-grid" id="scoreGrid"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">📋 Reason</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7" id="modalReason"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">⏱ Estimated Time Saved</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--green)" id="modalTimeSaved"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L3 7v10l9 5 9-5V7L12 2z" stroke="url(#grad1)" stroke-width="1.5" fill="none"/>
+            <circle cx="12" cy="12" r="3" fill="url(#grad1)"/>
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="24" y2="24">
+                <stop offset="0%" stop-color="#6ee7f7"/>
+                <stop offset="100%" stop-color="#a78bfa"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">SmartFlow <span class="logo-ai">AI</span></span>
+      </div>
+      <div class="header-right">
+        <div class="health-pill" id="healthPill">
+          🏙 City Health: <span class="health-score" id="healthScore">—</span>
+        </div>
+        <div class="header-status">
+          <span class="pulse-dot"></span>
+          <span>System Active</span>
+          <span class="time-badge" id="liveClock"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-label">🚦 Real-time Urban Mobility Intelligence</div>
+    <h1 class="hero-title">Smart Traffic<br/><span class="gradient-text">Decision Engine</span></h1>
+    <p class="hero-sub">AI-powered routing, mode-switching &amp; congestion control for modern cities. Analyze user context and get instant, optimized mobility recommendations.</p>
+    <div class="hero-stats">
+      <div class="stat-chip"><span class="stat-num" id="totalAnalyzed">0</span><span>Analyzed</span></div>
+      <div class="stat-chip"><span class="stat-num" id="rerouteCount">0</span><span>Rerouted</span></div>
+      <div class="stat-chip"><span class="stat-num" id="switchCount">0</span><span>Mode Switch</span></div>
+      <div class="stat-chip"><span class="stat-num" id="savedTime">0m</span><span>Time Saved</span></div>
+    </div>
+  </section>
+
+  <!-- Main Grid -->
+  <main class="main-grid">
+
+    <!-- Left Panel: Input Form -->
+    <section class="panel panel-form" id="inputPanel">
+      <div class="panel-header">
+        <h2>User Context Input</h2>
+        <span class="badge badge-blue">Manual Entry</span>
+      </div>
+
+      <form id="userForm" class="form-grid">
+        <div class="form-group">
+          <label class="form-label">User ID</label>
+          <input class="form-input" type="text" id="userId" value="U1" maxlength="8" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">User Type</label>
+          <div class="toggle-group" id="userTypeToggle">
+            <button type="button" class="toggle-btn active" data-value="stuck">
+              🚗 Stuck in Traffic
+            </button>
+            <button type="button" class="toggle-btn" data-value="starting">
+              🏁 Starting Trip
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Current Transport</label>
+          <div class="transport-grid" id="transportGrid">
+            <button type="button" class="transport-btn active" data-value="car">🚗 Car</button>
+            <button type="button" class="transport-btn" data-value="bike">🚲 Bike</button>
+            <button type="button" class="transport-btn" data-value="bus">🚌 Bus</button>
+            <button type="button" class="transport-btn" data-value="metro">🚇 Metro</button>
+            <button type="button" class="transport-btn" data-value="walking">🚶 Walk</button>
+            <button type="button" class="transport-btn" data-value="scooter">🛵 Scooter</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📍 Current Zone (Bangalore)</label>
+          <select class="form-input" id="zoneSelect">
+            <option value="0">Silk Board — Extreme 🔴</option>
+            <option value="1">MG Road — High 🟠</option>
+            <option value="2">Koramangala — High 🟠</option>
+            <option value="3">Whitefield — Medium 🟡</option>
+            <option value="4">Hebbal — Extreme 🔴</option>
+            <option value="5">Electronic City — Medium 🟡</option>
+            <option value="6">Indiranagar — High 🟠</option>
+            <option value="7">Yeshwanthpur — Low 🟢</option>
+            <option value="8">Jayanagar — Medium 🟡</option>
+            <option value="9">Marathahalli — High 🟠</option>
+            <option value="10">BTM Layout — Medium 🟡</option>
+            <option value="11">City Centre — High 🟠</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Destination Urgency</label>
+          <div class="level-slider-group" id="urgencyGroup">
+            <button type="button" class="level-btn" data-level="low" data-group="urgency">Low</button>
+            <button type="button" class="level-btn active" data-level="medium" data-group="urgency">Medium</button>
+            <button type="button" class="level-btn" data-level="high" data-group="urgency">High</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Traffic Level</label>
+          <div class="level-slider-group" id="trafficGroup">
+            <button type="button" class="level-btn" data-level="low" data-group="traffic">Low</button>
+            <button type="button" class="level-btn" data-level="medium" data-group="traffic">Medium</button>
+            <button type="button" class="level-btn active" data-level="high" data-group="traffic">High</button>
+            <button type="button" class="level-btn" data-level="extreme" data-group="traffic">Extreme</button>
+          </div>
+        </div>
+
+        <button type="submit" class="analyze-btn" id="analyzeBtn">
+          <span class="btn-icon">⚡</span>
+          <span>Analyze &amp; Recommend</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Center: Traffic Map Visualization -->
+    <section class="panel panel-map">
+      <div class="panel-header">
+        <h2>City Traffic Map</h2>
+        <span class="badge badge-green" id="mapStatus">Live</span>
+      </div>
+      <div class="map-container">
+        <div id="trafficMap"></div>
+        <div class="map-legend">
+          <span><span class="dot dot-green"></span>Low</span>
+          <span><span class="dot dot-yellow"></span>Medium</span>
+          <span><span class="dot dot-orange"></span>High</span>
+          <span><span class="dot dot-red"></span>Extreme</span>
+          <span><span class="dot" style="background:#a78bfa;box-shadow:0 0 6px #a78bfa"></span>User Pin</span>
+        </div>
+      </div>
+      <!-- Active Sessions -->
+      <div class="panel-header" style="margin-top:1.5rem">
+        <h2>Active Sessions</h2>
+        <span class="badge badge-purple" id="sessionCount">0 users</span>
+      </div>
+      <div class="sessions-list" id="sessionsList"></div>
+    </section>
+
+    <!-- Right Panel: Output + Simulation -->
+    <section class="panel panel-output">
+      <div class="panel-header">
+        <h2>AI Recommendations</h2>
+        <div class="output-actions">
+          <button class="icon-btn" id="copyBtn" title="Copy JSON">📋</button>
+          <button class="icon-btn" id="clearBtn" title="Clear All">🗑</button>
+        </div>
+      </div>
+
+      <!-- Recommendation Cards -->
+      <div class="reco-stream" id="recoStream">
+        <div class="empty-state">
+          <div class="empty-icon">🤖</div>
+          <p>Submit a user request or run<br/>the simulation to see AI decisions.</p>
+        </div>
+      </div>
+
+      <!-- JSON Output -->
+      <div class="json-panel" id="jsonPanel" style="display:none">
+        <div class="json-header">
+          <span>JSON Output</span>
+          <button class="json-copy-btn" id="jsonCopy">Copy</button>
+        </div>
+        <pre class="json-code" id="jsonOutput"></pre>
+      </div>
+    </section>
+  </main>
+
+  <!-- Traffic Density Chart -->
+  <section class="density-section">
+    <div class="density-panel">
+      <div class="panel-header">
+        <h2>📊 Zone Traffic Density</h2>
+        <span class="badge badge-blue">Real-time</span>
+      </div>
+      <div class="chart-wrap" id="densityChart"></div>
+    </div>
+  </section>
+
+  <!-- Simulation Controls -->
+  <section class="sim-section">
+    <div class="sim-header">
+      <h2>🎮 Multi-User Simulation</h2>
+      <p>Run a batch AI simulation with diverse user scenarios to see system-wide optimization.</p>
+    </div>
+    <div class="sim-controls">
+      <div class="sim-config">
+        <label>Users to simulate:</label>
+        <select id="simCount" class="sim-select">
+          <option value="4">4 users</option>
+          <option value="6" selected>6 users</option>
+          <option value="8">8 users</option>
+          <option value="12">12 users</option>
+        </select>
+        <label>Speed:</label>
+        <select id="simSpeed" class="sim-select">
+          <option value="300">Fast</option>
+          <option value="700" selected>Normal</option>
+          <option value="1200">Slow</option>
+        </select>
+      </div>
+      <button class="sim-btn" id="runSimBtn">▶ Run Simulation</button>
+      <button class="sim-btn sim-btn-outline" id="stopSimBtn" disabled>⏹ Stop</button>
+      <button class="export-btn" id="exportCsvBtn" disabled>⬇ Export CSV</button>
+    </div>
+    <!-- Simulation Output Table -->
+    <div class="sim-table-wrap" id="simTableWrap" style="display:none">
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Type</th>
+            <th>Transport</th>
+            <th>Urgency</th>
+            <th>Traffic</th>
+            <th>Action</th>
+            <th>Confidence</th>
+            <th>Recommendation</th>
+          </tr>
+        </thead>
+        <tbody id="simTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-section">
+    <h2>How the Decision Engine Works</h2>
+    <div class="rules-grid">
+      <div class="rule-card">
+        <div class="rule-icon">🚨</div>
+        <h3>Emergency Priority</h3>
+        <p>High-urgency users are always routed to the fastest available option — including mode switches.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rule-icon">🔄</div>
+        <h3>Reroute Logic</h3>
+        <p>Stuck users in high/extreme traffic are rerouted via alternate paths to clear congestion zones.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rule-icon">🚲</div>
+        <h3>Mode Switching</h3>
+        <p>Promotes lighter transport (bike, metro, walk) to reduce density and improve system-wide flow.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rule-icon">⏳</div>
+        <h3>Delay Recommendation</h3>
+        <p>Low-urgency users in extreme traffic are advised to delay, easing peak-hour load.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rule-icon">🧮</div>
+        <h3>Weighted Scoring</h3>
+        <p>Each action is scored on a multi-factor matrix: traffic density, urgency, mode efficiency &amp; user type.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rule-icon">📊</div>
+        <h3>Confidence Scoring</h3>
+        <p>Every decision comes with a confidence % showing how strongly the AI preferred that action over alternatives.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>SmartFlow AI — Urban Mobility Intelligence System &nbsp;|&nbsp; Built for Smart City Demo 2026</p>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
