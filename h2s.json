@@ -1,0 +1,41 @@
+{
+  "zones": [
+    {
+      "id": "A",
+      "density": 0.2,
+      "congestion_risk": "low"
+    },
+    {
+      "id": "B",
+      "density": 0.85,
+      "congestion_risk": "high"
+    },
+    {
+      "id": "C",
+      "density": 0.5,
+      "congestion_risk": "medium"
+    }
+  ],
+  "users": [
+    {
+      "user_id": 1,
+      "current_zone": "A"
+    },
+    {
+      "user_id": 2,
+      "current_zone": "B"
+    },
+    {
+      "user_id": 3,
+      "current_zone": "B"
+    },
+    {
+      "user_id": 4,
+      "current_zone": "C"
+    },
+    {
+      "user_id": 5,
+      "current_zone": "C"
+    }
+  ]
+}
