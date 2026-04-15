@@ -1,0 +1,27 @@
+[
+  {
+    "user_id": 1,
+    "action": "CONTINUE",
+    "reason": "Zone A is low density and safe for movement."
+  },
+  {
+    "user_id": 2,
+    "action": "REROUTE",
+    "reason": "Zone B is at high risk; diverting to Zone A to balance density."
+  },
+  {
+    "user_id": 3,
+    "action": "WAIT",
+    "reason": "Zone B is congested; pausing movement to allow current traffic to clear."
+  },
+  {
+    "user_id": 4,
+    "action": "CONTINUE",
+    "reason": "Zone C density is moderate and within acceptable limits."
+  },
+  {
+    "user_id": 5,
+    "action": "REROUTE",
+    "reason": "Proactive balance; moving to Zone A to prevent Zone C from reaching high risk."
+  }
+]
